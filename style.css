@@ -497,13 +497,21 @@ iframe {
 ========================================================= */
 footer {
     background: var(--secondary-color);
-    color: var(--white);
+    /*color: var(--white);*/
     padding: 42px 5%;
     text-align: center;
 }
 
 footer p {
     color: rgba(0, 0, 0, 0.9);
+}
+
+.creator {
+    color: rgba(0, 0, 0, 0.9);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    padding-bottom: 2px;
 }
 
 .social-links {
