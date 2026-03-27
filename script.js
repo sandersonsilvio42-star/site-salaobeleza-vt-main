@@ -567,7 +567,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
- 
+  apiKey: "AIzaSyAKPvlciYrGsFqjBHBiwtrqk9H1DlldeN8",
+  authDomain: "todabelastudio-948f6.firebaseapp.com",
+  projectId: "todabelastudio-948f6",
+  storageBucket: "todabelastudio-948f6.appspot.com",
+  messagingSenderId: "830152080762",
+  appId: "1:830152080762:web:0afbab9819498346ac2ac3",
+  measurementId: "G-QGPGMVCKL4"
 };
 
 const app = initializeApp(firebaseConfig);
