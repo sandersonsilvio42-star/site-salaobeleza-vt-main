@@ -1058,6 +1058,8 @@ confirmarBtn?.addEventListener('click', async () => {
       createdAt: serverTimestamp()
     });
 
+    console.log(`[SITE] Agendamento salvo na coleção ${col} para ${data} ${hhmm}`);
+
     await carregarIndisponiveis();
 
     const dataBR = new Date(`${data}T00:00:00`).toLocaleDateString('pt-BR');
