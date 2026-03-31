@@ -95,7 +95,11 @@
                 <div class="contact-info">
                     <div class="info-item">
                         <i class='bx bx-time'></i>
-                        <span><span id="horarioFuncionamentoTexto">Seg-Sáb: 9h às 19h</span></span>
+                        <span><span id="horarioFuncionamentoTexto">Seg-Sex: 9h às 19h</span></span>
+                    </div>
+                                        <div class="info-item">
+                        <i class='bx bx-time'></i>
+                        <span><span id="horarioFuncionamentoTexto">Sábado: 8h às 16h</span></span>
                     </div>
                     <div class="info-item">
                         <i class='bx bx-phone'></i>
@@ -178,6 +182,24 @@
             <select id="hora" disabled>
                 <option value="">Selecione a data e depois o serviço</option>
             </select>
+
+            <!-- Opções de recorrência -->
+            <div class="recorrencia-section">
+                <label>
+                    <input type="checkbox" id="recorrenteCheck" />
+                    Agendamento recorrente
+                </label>
+                <div id="recorrenciaOptions" class="hidden">
+                    <label for="recorrenciaTipo">Repetir:</label>
+                    <select id="recorrenciaTipo">
+                        <option value="semanal">Semanalmente</option>
+                        <option value="quinzenal">A cada 2 semanas</option>
+                        <option value="mensal">Mensalmente</option>
+                    </select>
+                    <label for="recorrenciaVezes">Quantas vezes:</label>
+                    <input type="number" id="recorrenciaVezes" min="2" max="12" value="4" />
+                </div>
+            </div>
 
             <button id="confirmarBtn">Agendar</button>
         </div>

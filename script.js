@@ -962,6 +962,39 @@ servicoConfirmarWpp?.addEventListener('click', async () => {
   }
 });
 
+// ===== Recorrência =====
+const recorrenteCheck = document.getElementById('recorrenteCheck');
+const recorrenciaOptions = document.getElementById('recorrenciaOptions');
+
+recorrenteCheck?.addEventListener('change', () => {
+  if (recorrenteCheck.checked) {
+    recorrenciaOptions.classList.remove('hidden');
+  } else {
+    recorrenciaOptions.classList.add('hidden');
+  }
+});
+
+// Função para gerar datas recorrentes
+function gerarDatasRecorrentes(dataInicial, tipo, vezes) {
+  const datas = [];
+  const data = new Date(dataInicial + 'T00:00:00');
+  
+  for (let i = 0; i < vezes; i++) {
+    const ymd = data.toISOString().split('T')[0];
+    datas.push(ymd);
+    
+    if (tipo === 'semanal') {
+      data.setDate(data.getDate() + 7);
+    } else if (tipo === 'quinzenal') {
+      data.setDate(data.getDate() + 14);
+    } else if (tipo === 'mensal') {
+      data.setMonth(data.getMonth() + 1);
+    }
+  }
+  
+  return datas;
+}
+
 // ===== Confirmar agendamento =====
 const confResumo = document.getElementById('confResumo');
 const btnOkConfirmacao = document.getElementById('btnOkConfirmacao');
@@ -1021,44 +1054,80 @@ confirmarBtn?.addEventListener('click', async () => {
   try {
     const hhmm = normalizeHora(hora);
     const col = (ctx.colecao || '').trim();
-    const ref = doc(db, col, toKey(data, hhmm));
-    const snap = await getDoc(ref);
-
-    if (snap.exists()) {
-      await carregarIndisponiveis();
-      alert("Este horário já foi reservado. Escolha outro, por favor.");
-      return;
+    
+    // Verificar se é recorrente
+    const isRecorrente = recorrenteCheck?.checked;
+    let datasAgendamento = [data];
+    
+    if (isRecorrente) {
+      const tipo = document.getElementById('recorrenciaTipo')?.value || 'semanal';
+      const vezes = parseInt(document.getElementById('recorrenciaVezes')?.value) || 4;
+      datasAgendamento = gerarDatasRecorrentes(data, tipo, vezes);
+    }
+    
+    // Verificar conflitos para todas as datas
+    for (const dataAgend of datasAgendamento) {
+      const ref = doc(db, col, toKey(dataAgend, hhmm));
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        await carregarIndisponiveis();
+        alert(`O horário ${hhmm} já foi reservado para ${new Date(dataAgend + 'T00:00:00').toLocaleDateString('pt-BR')}. Escolha outro horário.`);
+        return;
+      }
+      
+      // Verificar se a data é permitida para o profissional
+      if (!dataPermitidaParaProf(dataAgend, ctx.profissionalNome)) {
+        alert(`O profissional não atende em ${new Date(dataAgend + 'T00:00:00').toLocaleDateString('pt-BR')} (${folgaMsg(ctx.profissionalNome)}).`);
+        return;
+      }
     }
 
     const isRaClub = agendamentoContexto?.raclub?.status === 'membro';
     const nomeCompleto = `${agendamentoContexto.nomeCliente} ${agendamentoContexto.sobrenomeCliente}`.trim();
 
-    await setDoc(ref, {
-      data,
-      hora: hhmm,
+    // Salvar todos os agendamentos
+    const batch = writeBatch(db);
+    datasAgendamento.forEach((dataAgend, index) => {
+      const ref = doc(db, col, toKey(dataAgend, hhmm));
+      const agendamentoData = {
+        data: dataAgend,
+        hora: hhmm,
 
-      profissional: ctx.profissionalId || 'rodrigotorre2',
-      profissionalNome: ctx.profissionalNome || null,
+        profissional: ctx.profissionalId || 'rodrigotorre2',
+        profissionalNome: ctx.profissionalNome || null,
 
-      clienteNome: agendamentoContexto.nomeCliente,
-      clienteSobrenome: agendamentoContexto.sobrenomeCliente,
-      clienteNomeCompleto: nomeCompleto,
-      clienteNomeLower: (agendamentoContexto.nomeCliente || '').toLowerCase(),
-      clienteSobrenomeLower: (agendamentoContexto.sobrenomeCliente || '').toLowerCase(),
-      clienteTelefone: agendamentoContexto.telefoneCliente,
+        clienteNome: agendamentoContexto.nomeCliente,
+        clienteSobrenome: agendamentoContexto.sobrenomeCliente,
+        clienteNomeCompleto: nomeCompleto,
+        clienteNomeLower: (agendamentoContexto.nomeCliente || '').toLowerCase(),
+        clienteSobrenomeLower: (agendamentoContexto.sobrenomeCliente || '').toLowerCase(),
+        clienteTelefone: agendamentoContexto.telefoneCliente,
 
-      servicoNome: agendamentoContexto.servico?.nome || null,
-      servicoValor: agendamentoContexto.servico?.valor ?? null,
-      servicoTempoMin: Number(agendamentoContexto.servico?.tempoMin) || 30,
+        servicoNome: agendamentoContexto.servico?.nome || null,
+        servicoValor: agendamentoContexto.servico?.valor ?? null,
+        servicoTempoMin: Number(agendamentoContexto.servico?.tempoMin) || 30,
 
-      raclub: agendamentoContexto.raclub || { status: 'nao' },
-      raclubMembro: isRaClub,
-      clienteTipo: isRaClub ? 'raclub' : 'cliente',
-      tags: isRaClub ? ['raclub'] : [],
-      createdAt: serverTimestamp()
+        raclub: agendamentoContexto.raclub || { status: 'nao' },
+        raclubMembro: isRaClub,
+        clienteTipo: isRaClub ? 'raclub' : 'cliente',
+        tags: isRaClub ? ['raclub'] : [],
+        createdAt: serverTimestamp()
+      };
+      
+      if (isRecorrente) {
+        agendamentoData.recorrente = {
+          tipo: document.getElementById('recorrenciaTipo')?.value || 'semanal',
+          vezes: datasAgendamento.length,
+          sequencia: index + 1
+        };
+      }
+      
+      batch.set(ref, agendamentoData);
     });
 
-    console.log(`[SITE] Agendamento salvo na coleção ${col} para ${data} ${hhmm}`);
+    await batch.commit();
+
+    console.log(`[SITE] ${datasAgendamento.length} agendamento(s) salvo(s) na coleção ${col}`);
 
     await carregarIndisponiveis();
 
@@ -1071,14 +1140,18 @@ confirmarBtn?.addEventListener('click', async () => {
     if (agendamentoContexto.raclub.status === 'membro') raclubTxt = "Membro";
     else if (agendamentoContexto.raclub.status === 'assinar' || agendamentoContexto.raclub.status === 'assinar_link') raclubTxt = "Deseja assinar";
 
+    const recorrenciaTxt = isRecorrente ? 
+      `Sim (${document.getElementById('recorrenciaTipo')?.value} - ${datasAgendamento.length} vezes)` : 
+      "Não";
+
     if (confResumo) {
       confResumo.innerHTML = `
         <div class="line"><span class="label">Cliente:</span><span>${nomeCompleto}</span></div>
         <div class="line"><span class="label">Profissional:</span><span>${ctx.profissionalNome}</span></div>
-        <div class="line"><span class="label">Profissional ID:</span><span>${ctx.profissionalId}</span></div>
-        <div class="line"><span class="label">Data:</span><span>${dataBR}</span></div>
+        <div class="line"><span class="label">Data inicial:</span><span>${dataBR}</span></div>
         <div class="line"><span class="label">Hora:</span><span>${hhmm}</span></div>
         <div class="line"><span class="label">Serviço:</span><span>${servicoTxt}</span></div>
+        <div class="line"><span class="label">Recorrente:</span><span>${recorrenciaTxt}</span></div>
         <div class="line"><span class="label">RA Club:</span><span>${raclubTxt}</span></div>
       `;
     }

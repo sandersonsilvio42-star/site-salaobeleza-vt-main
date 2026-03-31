@@ -699,6 +699,49 @@ footer p {
     background: var(--success-dark);
 }
 
+/* Recorrência */
+.recorrencia-section {
+    margin-top: 15px;
+    padding: 15px;
+    background: var(--bg-light);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.recorrencia-section label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.recorrencia-section input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+#recorrenciaOptions {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#recorrenciaOptions label {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+#recorrenciaOptions select,
+#recorrenciaOptions input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 13px;
+}
+
 #confirmarBtn[disabled] {
     opacity: .7;
     cursor: not-allowed;
